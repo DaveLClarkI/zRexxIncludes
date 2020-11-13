@@ -1,0 +1,20 @@
+/* --------------------------------------------------------------- */           
+/* StrCount: Procedure;                                            */           
+/*           Returns the number of needles found in the haystack.  */           
+/*                                                                 */           
+/* Author: "Hughes, Jim - OIT" <jim.hughes@oit.nh.gov>             */           
+/* --------------------------------------------------------------- */           
+  Arg needle,haystack;                                                          
+/*                                                                              
+  Where: needle    is the string value to find,                                 
+         haystack  is the string value to search                                
+                     (using a case insensitive search).                         
+*/                                                                              
+  haystack = x'00'||haystack||x'00';                                            
+                                                                                
+  Do count = 0 Until haystack = ""                                              
+    Parse Var haystack . (needle) haystack;                                     
+  End                                                                           
+                                                                                
+Return count;                                                                   
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           

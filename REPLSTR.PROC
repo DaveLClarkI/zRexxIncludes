@@ -1,0 +1,32 @@
+/* --------------------------------------------------------------- */
+/* ReplStr: Procedure;                                             */
+/*          Function to combine the DelStr and Insert functions to */
+/*          replace one string with another (plus other features). */
+/*                                                                 */
+/* Author: "Dave L Clark" <dlclark@winwholesale.com>               */
+/* --------------------------------------------------------------- */
+  Parse Arg needle,haystack,seed,opt,case;
+/*
+  Where: needle    is the string value to find,
+         haystack  is the string value to search,
+         seed      is the string value to replace 'needle',
+         opt       is a Boolean value indicating whether all
+                     occurrences of 'needle' will be replaced, and
+         case      is a string value indicating whether to
+                     'IGNORE' or 'MATCH' case when searching.
+*/
+  p = 1;
+  If opt <> 1 Then opt = 0;
+  Do Until opt = 0 | p = 0 | p > Length(haystack);
+    If Left(case,1) == 'I' Then;
+      p = Pos(Translate(needle),Translate(haystack),p);
+    Else Do;
+      p = Pos(needle,haystack,p);
+    End;
+    If p > 0 Then Do;
+      haystack = Insert(seed,DelStr(haystack,p,Length(needle)),p-1);
+      p = p + Length(seed);
+    End;
+  End;
+Return haystack;
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

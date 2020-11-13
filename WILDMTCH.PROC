@@ -1,0 +1,45 @@
+/* ----------------------------------------------------------------*/
+/* WildMtch: Procedure;                                            */
+/*      Function to perform wildcard matching between two strings. */
+/*                                                                 */
+/* Author: "Dave L Clark" <dlclark@winwholesale.com>               */
+/* ----------------------------------------------------------------*/
+  Parse Arg orig,match,chars,case;
+/*
+  Where: orig      is the string value to which to match,
+         match     is the string value from which to match,
+         chars     are the two wild card characters to use,
+                     (the first is for single-character matching and
+                      the second is for matching all remaining chars)
+         case      is a string value indicating whether to
+                     'IGNORE' (default) or 'MATCH' case when searching.
+*/
+  True  = (1=1);
+  False = (1=0);
+
+  If chars = "",
+  |  Length(chars) < 2 Then Do;
+    chars = "?*";
+  End;
+  single_char   = Left(chars,1);
+  all_remaining = SubStr(chars,2,1);
+  If Left(case,1) <> "M" Then Do;
+    orig  = Translate(orig);
+    match = Translate(match);
+  End;
+  j = Length(orig);
+  k = Length(match);
+  If k > j Then j = k;
+
+  Do i = 1 to j;
+    a = Substr(orig,i,1);
+    b = Substr(match,i,1);
+    Select;
+      When b == all_remaining Then; Return True;
+      When b == single_char   Then; Iterate;
+      When b == a             Then; Iterate;
+      Otherwise;                    Return False;
+    End;
+  End;
+Return True;
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */

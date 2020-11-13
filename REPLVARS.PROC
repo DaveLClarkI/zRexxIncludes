@@ -1,0 +1,194 @@
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           
+/* REXX: REPLVARS   Proc Created 05/18/2004   By Dave Clark        */           
+/*                  Last Revised 08/26/2009                        */           
+/*                                                                 */           
+/*      This external  REXX  function  returns  the  passed string */           
+/* argument, as a string value, after performing both VSE Symbolic */           
+/* Parameter resolution  and  internal  variable  replacement upon */           
+/* that argument string.   For  VSE Symbolic Parameter resolution, */           
+/* of course,  standard VSE JCL methods must pass them down to the */           
+/* REXX level of execution.  Supported internal variable names are */           
+/* listed here in the document source.                             */           
+/*                                                                 */           
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           
+                                                                                
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           
+/* No warranty is expressed or implied.    Written by Dave L Clark */           
+/* Neither the author nor the company is   WinWholesale Group Svcs */           
+/* responsible for any loss or damage      3110 Kettering Blvd.    */           
+/* resulting from the use of this code.    Dayton, OH  45439       */           
+/* Source is provided on an as-is basis.   Phone (937)294-5331     */           
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           
+                                                                                
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           
+/* Note:  The passed argument string  must take into consideration */           
+/* the delimiters for variable names as expected by this function. */           
+/* The less-than (<) and greater-than  (>) symbols are expected as */           
+/* delimiters for VSE Symbolic  Parameter names.   The percent (%) */           
+/* symbol is expected as delimiters for internal variable names -- */           
+/* as shown below:                                                 */           
+/*                                                                 */           
+/*   %D$1%   2-digit year value for the current date;              */           
+/*   %D$2%   2-digit month value for the current date;             */           
+/*   %D$3%   2-digit day value for the current date;               */           
+/*   %D$4%   4-digit year value for the current date;              */           
+/*   %D$5%   occurrence of this weekday (1-5) in current month;    */           
+/*   %D$6%   weekly cycle number (1-6) for the current month;      */           
+/*   %D$B%   complete days since base date of 01/01/0001;          */           
+/*   %D$C%   inclusive days since start of current century;        */           
+/*   %D$D%   inclusive days since start of current year;           */           
+/*   %D$E%   current European formatted date (dd/mm/yy);           */           
+/*   %D$J%   current Julian unformatted date (yyddd);              */           
+/*   %D$M%   full English name for the current month;              */           
+/*   %D$N%   current Normalized date format (dd mon ccyy);         */           
+/*   %D$O%   current Ordered formatted date (yy/mm/dd);            */           
+/*   %D$Q%   current Quarter number of the current year;           */           
+/*   %D$S%   current Standard unformatted date (ccyymmdd);         */           
+/*   %D$U%   current USA formatted date (mm/dd/yy);                */           
+/*   %D$V%   3-char abbreviated name for the current weekday;      */           
+/*   %D$W%   full English name for the current weekday;            */           
+/*   %D$X%   1-digit weekday number (1-7: Sunday thru Sabbath);    */           
+/*   %D$Y%   occurrence of this weekday (01-53) in current year;   */           
+/*   %D$Z%   weekly cycle number (01-54) for the current year;     */           
+/*                                                                 */           
+/*   %T$C%   current Civil (12hr) formatted time (hh:mmxx);        */           
+/*   %T$H%   hours since midnight of the current day;              */           
+/*   %T$L%   current Long formatted time (hh:mm:ss.uuuuuu);        */           
+/*   %T$M%   minutes since midnight of the current day;            */           
+/*   %T$N%   current Normal (24hr) formatted time (hh:mm:ss);      */           
+/*   %T$S%   seconds since midnight of the current day;            */           
+/*   %T$T%   current unformatted Time (24hr) value (hhmmssuu);     */           
+/*                                                                 */           
+/*   %V$C%   current POWER Job Class;                              */           
+/*   %V$I%   current CPU Id;                                       */           
+/*   %V$J%   current POWER Job Name;                               */           
+/*   %V$N%   current POWER Job Number;                             */           
+/*   %V$P%   current VSE SYSLOG Partition Id;                      */           
+/*   %V$R%   current VSE MRC value;                                */           
+/*   %V$U%   current User Id (or, if none, the Job Name);          */           
+/*   %V$V%   current VSE // JOB Name; and,                         */           
+/*   %V$Z%   current zVSE Supervisor version number.               */           
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           
+                                                                                
+  Parse Source _sys _env _pgm _tokens;                                          
+                                                                                
+  Parse Arg _str;                                                               
+                                                                                
+  _true = (1=1);                                                                
+                                                                                
+  Call ReplaceSystemSymbolics;                                                  
+                                                                                
+  Call ReplaceInternalSymbolics;                                                
+                                                                                
+Return _str;                                                                    
+                                                                                
+/* ----------------------------------------------------------------- */         
+/* Internal routines                                                 */         
+/* ----------------------------------------------------------------- */         
+                                                                                
+CalcTimeStamp: Procedure;                                                       
+  Parse Value Time("L") With hh ":" mm ":" ss "." uu;                           
+  uu = Right(Format(uu/10000,,0),2,'0');    /* convert to hundredths */         
+Return hh||mm||ss||uu;                                                          
+                                                                                
+CalcWeekNo: Procedure;                                                          
+  Arg opt;  dow = (Date("B")+1)//7; /* Sun. thru Sat. weekly cycle */           
+  If opt=='5' | opt=='6' Then day  = SubStr(Date("S"),7,2);                     
+                         Else day  = Date("D");                                 
+  If opt=='5' | opt=='Y' Then week = Trunc((day-1)/7+1);                        
+                         Else week = Trunc(((day+(6-dow))-1)/7+1);              
+  If opt=='Y' | opt=='Z' Then week = Right(week,2,'0');                         
+Return week;                                                                    
+                                                                                
+GetSYSVAR: Procedure;                                                           
+  Arg opt;                                                                      
+  Select                                                                        
+    When opt == 'C' Then data = 'SYSPOWJCLS';                                   
+    When opt == 'I' Then data = 'SYSCPUID';                                     
+    When opt == 'J' Then data = 'SYSPOWJNM';                                    
+    When opt == 'N' Then data = 'SYSPOWJNUM';                                   
+    When opt == 'P' Then data = 'SYSPID';                                       
+    When opt == 'R' Then data = 'SYSMRC';                                       
+    When opt == 'V' Then data = 'SYSJOBNAME';                                   
+    When opt == 'Z' Then data = 'SYSVERSION';                                   
+    Otherwise                                                                   
+  End                                                                           
+  Signal ON SYNTAX NAME TrapSYSVARerror;                                        
+  x = SYSVAR(data);                                                             
+  Signal OFF SYNTAX;                                                            
+Return Strip(Value(data));                                                      
+TrapSYSVARerror:                                                                
+  Signal OFF SYNTAX;                                                            
+Return '*rc='rc'*';                                                             
+                                                                                
+ReplaceInternalSymbolics:                                                       
+  _ivars = '%D$1%D$2%D$3%D$4%D$5%D$6%D$Q%D$V%D$X%D$Y%D$Z',                      
+         ||'%D$B%D$C%D$D%D$E%D$J%D$M%D$N%D$O%D$S%D$U%D$W',                      
+         ||'%T$C%T$H%T$L%T$M%T$N%T$S%T$T',                                      
+         ||'%V$C%V$I%V$J%V$N%V$P%V$R%V$U%V$V%V$Z%';                             
+  Do While 2 <= ChrCount('%',_str)                                              
+    Parse Var _str '%'_temp'%';                                                 
+    If Symbol(_temp) <> 'VAR' Then Do                                           
+      _temp = Translate(_temp)                                                  
+      If Pos('%'_temp'%',_ivars) = 0 Then Do                                    
+        Say ' '_pgm': Invalid internal symbol = "'_temp'"';                     
+        Exit 4;                                                                 
+      End                                                                       
+      _t = Left(_temp,1);                                                       
+      _v = Right(_temp,1);                                                      
+      Select                                                                    
+        When _t=='D' Then Do                                                    
+          _d = Date('S');                                                       
+          Select                                                                
+            When _v=='1' Then _x=Value(_temp,SubStr(_d,3,2));                   
+            When _v=='2' Then _x=Value(_temp,SubStr(_d,5,2));                   
+            When _v=='3' Then _x=Value(_temp,SubStr(_d,7,2));                   
+            When _v=='4' Then _x=Value(_temp,SubStr(_d,1,4));                   
+            When _v=='5' Then _x=Value(_temp,CalcWeekNo(_v));                   
+            When _v=='6' Then _x=Value(_temp,CalcWeekNo(_v));                   
+            When _v=='Q' Then _x=Value(_temp,Trunc(SubStr(_d,5,2)/3+.9));       
+            When _v=='V' Then _x=Value(_temp,Translate(Left(Date("W"),3)));     
+            When _v=='X' Then _x=Value(_temp,(Date("B")+1)//7+1);               
+            When _v=='Y' Then _x=Value(_temp,CalcWeekNo(_v));                   
+            When _v=='Z' Then _x=Value(_temp,CalcWeekNo(_v));                   
+            Otherwise         _x=Value(_temp,Date(_v));                         
+          End                                                                   
+        End                                                                     
+        When _t=='T' Then Do                                                    
+          Select                                                                
+            When _v=='T' Then _x=Value(_temp,CalcTimeStamp());                  
+            Otherwise         _x=Value(_temp,Time(_v));                         
+          End                                                                   
+        End                                                                     
+        When _t=='V' Then Do                                                    
+          Select                                                                
+            When _v=='U' Then _x=Value(_temp,USERID());                         
+            Otherwise         _x=Value(_temp,GetSYSVAR(_v));                    
+          End                                                                   
+        End                                                                     
+        Otherwise                                                               
+      End                                                                       
+    End                                                                         
+    _str = ReplStr('%'_temp'%',_str,Value(_temp),_true,'I');                    
+  End                                                                           
+Return;                                                                         
+                                                                                
+ReplaceSystemSymbolics:                                                         
+  Do While Pos('<',_str) > 0                                                    
+    Parse Var _str '<'_temp'>';                                                 
+    If Symbol(_temp) <> 'VAR' Then Do                                           
+      If Symbol(_temp) = 'BAD' Then Do                                          
+        Say ' '_pgm': Invalid symbol name = "'_temp'"';                         
+        Exit 4;                                                                 
+      End                                                                       
+      Call RXVSESYM 'Get',_temp;                                                
+      If rc <> 0 Then Do                                                        
+        Say ' '_pgm': RXVSESYM Get rc = 'rc', result = 'result;                 
+        Exit 4;                                                                 
+      End                                                                       
+    End                                                                         
+    _str = ReplStr('<'_temp'>',_str,Value(_temp),_true,'I');                    
+  End                                                                           
+Return;                                                                         
+                                                                                
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           

@@ -1,0 +1,24 @@
+/* --------------------------------------------------------------- */           
+/* ChrCount: Procedure;                                            */           
+/*           Returns the number of needles found in the haystack.  */           
+/*                                                                 */           
+/* Author: "Dieltiens Geert" <Geert.Dieltiens@inf.vanbreda.be>     */           
+/* --------------------------------------------------------------- */           
+  Arg needle,haystack;                                                          
+/*                                                                              
+  Where: needle    is the character value to find,                              
+         haystack  is the string value to search                                
+                     (using a case insensitive search).                         
+*/                                                                              
+  needle = Left(needle,1);                                                      
+                                                                                
+  If needle=' ' Then                                                            
+    count = Length(haystack) - Length(Space(haystack,0));                       
+  Else Do                                                                       
+    haystack = Space(haystack,0);                                               
+    count = Length(haystack) -,                                                 
+            Length(Space(Translate(haystack,' ',needle),0));                    
+  End                                                                           
+                                                                                
+Return count;                                                                   
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */           
