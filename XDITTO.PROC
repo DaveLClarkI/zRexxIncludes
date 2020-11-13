@@ -1,0 +1,18 @@
+/* --------------------------------------------------------------- */
+/* Function for Address DITTO Commands                             */
+/* --------------------------------------------------------------- */
+
+DittoCommand:
+  Parse Arg cmd;                   /* get DITTO command string  */
+  Drop ditto.;                     /* discard any previous outp */
+  ditto.  = '';                    /* initialize for new output */
+  ditto.0 = 0;                     /* & start with zero entries */
+  Address DITTO cmd;               /* Invoke DITTO */
+  If rc <> 0 Then Do
+    Say _pgm': Error in "'cmd'"; rc =' rc;
+    Do z = 1 to ditto.0
+      Say ' ' ditto.z;
+    End
+  End
+Return;
+

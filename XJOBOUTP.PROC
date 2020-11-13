@@ -1,0 +1,24 @@
+/* --------------------------------------------------------------- */
+/* Return Submitted Job Output    (WARNING! Tricky compound func!) */
+/* --------------------------------------------------------------- */
+GetJobOutput:
+  result = Arg(1);
+Return GetJobOutput_(Arg(1),Arg(2));
+
+GetJobOutput_: Procedure Expose (result) _pgm result. result_format;
+  Arg stem,class;
+  result.  = '';
+  result.0 = 0;
+  z = OUTTRAP('err.','*','NOCONCAT');
+  Address POWER "PUTQE RDR WAIT 300 STEM" stem,
+                           "JOBNAME jnm JOBNUM jno GENCM";
+  If rc = 0 Then
+    rc = GetLstOutput(jnm,jno,class,'Delete');
+  Else Do
+    Say _pgm': Error in submitted POWER RDR job; rc =' rc;
+    Do z = 1 to err.0
+      Say ' ' err.z;
+    End
+  End
+Return rc;
+

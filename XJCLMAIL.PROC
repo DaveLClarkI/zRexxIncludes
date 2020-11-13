@@ -1,0 +1,71 @@
+/* ----------------------------------------------------------------- */
+/* Accumulate JCL statements (WARNING! Tricky compound procedure!)   */
+/* ----------------------------------------------------------------- */
+BuildJob:
+  result = Arg(1);
+Return BuildJob_(Arg(1));
+
+BuildJob_: Procedure Expose (result) ajcl.
+  Arg stem;
+  Do i = 1 to Value(stem||0)
+    n = ajcl.0 + 1;
+    ajcl.0 = n;
+    ajcl.n = Value(stem||i);
+  End
+Return 0;
+
+/* ----------------------------------------------------------------- */
+/* Assemble EMAIL commands and JCL statements                        */
+/* ----------------------------------------------------------------- */
+
+SetCarbonCopy:
+  If Arg(1) <> '' Then Do
+    Call SetJCL 'RCPT Cc:' TranslateUser(Arg(1));
+  End
+Return;
+
+SetJCL:
+  n = bjcl.0 + 1;
+  If Arg(1) == '' Then
+    bjcl.n = '41'x;
+  Else Do
+    bjcl.n = Arg(1);
+  End
+  bjcl.0 = n;
+Return;
+
+SetRecipient:
+  If Arg(1) <> '' Then Do
+    Call SetJCL 'RCPT To:' TranslateUser(Arg(1));
+  End
+Return;
+
+SetSubject:
+  If _set_subject <> 'done' Then
+    Call SetJCL 'SUBJ Subject:' Arg(1);
+  Else Do
+    Call SetJCL 'SUB2' Arg(1);
+  End
+  _set_subject = 'done';
+Return;
+
+TranslateUser: Procedure;
+  Parse Arg _arg_user;
+  Select
+    When _arg_user = '*DAPMF' Then
+         _arg_user = 'MainframeProgramming@winwholesale.com';
+    When _arg_user = '*INFRA' Then
+         _arg_user = 'Infrastructure@winwholesale.com';
+    When _arg_user = '*NETOPS' Then
+         _arg_user = 'NetworkOps@winwholesale.com';
+    When _arg_user = '*OUTSRC' Then
+         _arg_user = 'oper@bluehilldata.com';
+    When _arg_user = 'jpdcell' Then
+         _arg_user = '9374754581@vtext.com';
+    Otherwise
+      If Pos("@", _arg_user) < 1 Then Do
+         _arg_user = _arg_user||'@winwholesale.com';
+      End
+  End
+Return _arg_user;
+

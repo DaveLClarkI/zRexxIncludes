@@ -1,0 +1,30 @@
+/* --------------------------------------------------------------- */
+/* Retrieve LST Job Output                                         */
+/* --------------------------------------------------------------- */
+GetLstOutput: Procedure Expose _pgm result. result_format;
+  Arg jnm,jno,class,opt;
+  result.  = '';
+  result.0 = 0;
+  z = OUTTRAP('err.','*','NOCONCAT');
+  Address POWER "GETQE LST JOBNAME" jnm "JOBNUM" jno "CLASS" class,
+                "STEM result. FORMAT result_format CTRLREC";
+  If rc <> 0 Then Do
+    Say _pgm': Error retrieving POWER LST queue entry; rc =' rc;
+    Do z = 1 to err.0
+      Say ' ' err.z;
+    End
+  End
+  Else Do
+    If Left(opt,1) = 'D' Then Do
+      z = OUTTRAP('err.','*','NOCONCAT');
+      Address POWER "PDELETE LST,"jnm","jno",CCLASS="class;
+      If rc <> 0 Then Do
+        Say _pgm': Error deleting POWER LST queue entry; rc =' rc;
+        Do z = 1 to err.0
+          Say ' ' err.z;
+        End
+      End
+    End
+  End
+Return rc;
+

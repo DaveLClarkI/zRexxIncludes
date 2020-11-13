@@ -1,0 +1,85 @@
+/* ----------------------------------------------------------------- */
+/* REXX Function to manage a REXX Console                            */
+/*                                                                   */
+/* Exposed variables _pgm, cnsl, and mask are input variables.  The  */
+/* rest are output variables.  Arguments are as shown below.         */
+/*                                                                   */
+/* cnsl   should be the 4- to 8-char name for your console session;  */
+/* cart   up to 8-char corel. token but should match chars in mask;  */
+/* action should be: INIT to start a console session,                */
+/*                   PUT  to send a message to the console,          */
+/*                   GET  to receive msgs. from the console, and     */
+/*                   TERM to end a console session;                  */
+/* data   should be: the console profile for INIT -- as follows:     */
+/*                       REXX     messages for this console only,    */
+/*                       REXALLRC all messages and routing codes,    */
+/*                       REXNORC  all messages (no routing codes),   */
+/*                       REXAUTO  automated message handler only,    */
+/*                   the console command or response for PUT,        */
+/*                   the retrieval type for GET -- as follows:       */
+/*                       MSG  for any message but one at a time,     */
+/*                       RESP for all response messages, only, and   */
+/*                   omitted for TERM.                               */
+/* ----------------------------------------------------------------- */
+
+RexxConsole: Procedure Expose _pgm  cnsl  mask  msgs.,
+                              mdbcpnum  mdbcret  mdbgdom   mdbghold,
+                              mdbgjbnm  mdbgmid  mdbgdstp  mdbgtime,
+                              mdbcpnum. mdbcret. mdbgdom.  mdbghold.,
+                              mdbgjbnm. mdbgmid. mdbgdstp. mdbgtime.;
+  Arg cart, action, data;
+
+  Select
+
+  When action = 'INIT' Then
+    Do
+      Address CONSOLE "ACTIVATE NAME" cnsl "PROFILE" data;
+      If rc <> 0 Then Do
+        Say _pgm': Error activating "'cnsl'" console; rc =' rc;
+        Exit 4;
+      End
+      If cart <> '' Then Do
+        Address CONSOLE "CART" cart;
+        If rc <> 0 Then Do
+          Say _pgm': Error setting "'cart'" CART; rc =' rc;
+          Exit 4;
+        End
+      End
+    End
+
+  When action = 'PUT'  Then
+    Do
+      Address CONSOLE data;
+      If rc <> 0 Then Do
+        Say _pgm': Error issuing "'data'" to console; rc =' rc;
+        Exit 4;
+      End
+    End
+
+  When action = 'GET'  Then
+    Do
+      msgs. = '';
+      msgs.0 = 0;
+      If cart = '' Then
+        rc = GETMSG('msgs.',data,,,5);
+      Else Do
+        rc = GETMSG('msgs.',data,cart,mask,5);
+      End
+      If rc <> 0 & rc <> 4 & rc <> 5 Then Do
+        Say _pgm': Error retrieving "'data'" messages; rc =' rc;
+        Exit 4;
+      End
+    End
+
+  Otherwise
+    Do
+      Address CONSOLE "DEACTIVATE" cnsl;
+      If rc <> 0 Then Do
+        Say _pgm': Error deactivating "'cnsl'" console; rc =' rc;
+        Exit 4;
+      End
+    End
+
+  End
+Return;
+

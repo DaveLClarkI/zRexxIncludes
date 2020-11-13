@@ -1,0 +1,57 @@
+/* ----------------------------------------------------------------- */
+/* Return a numeric value formatted with commas.                     */
+/* ----------------------------------------------------------------- */
+Commas: Procedure
+  Arg str;
+  If Pos(".",str) < 1 Then decm = "";
+  Else decm = SubStr(str,Pos(".",str));
+  str  = Left(str,Length(str)-Length(decm));
+  Do i = Length(str)-3 To 1 By -3
+    str = Left(str,i)","SubStr(str,i+1);
+  End
+Return str||decm;
+
+/* ----------------------------------------------------------------- */
+/* Return a readable and scaled file size specification.             */
+/* ----------------------------------------------------------------- */
+FileSize: Procedure;
+  Arg nbr,cisize,type;
+  If type == 'XLDS' Then Do
+    nbr = nbr * cisize;
+    Return FormatScaled(nbr,5,2,1,1000,"BKMGTP");
+  End
+Return FormatScaled(nbr,5,2,1,1024,"BKMGTP");
+
+/* ----------------------------------------------------------------- */
+/* Return a readable and scaled numeric value with commas.           */
+/* ----------------------------------------------------------------- */
+FormatScaled: Procedure;
+  Arg nbr,wdt,whl,dcm,factor,radix;
+  Do scale = 1 To Length(radix)
+    If nbr < (10**whl) Then Leave;
+    nbr = nbr / factor;
+  End
+Return Right(Commas(Format(nbr,,dcm))||SubStr(radix,scale,1),wdt);
+
+/* ----------------------------------------------------------------- */
+/* IF Function whose first argument is a Boolean value that          */
+/*             determines which of the other two arguments to return */
+/* ----------------------------------------------------------------- */
+IFF: Procedure;
+  Parse Arg cond,trueValue,falseValue;
+  If cond Then Return trueValue;
+Return falseValue;
+/* ----------------------------------------------------------------- */
+
+InList:
+  If WordPos(Arg(1),Arg(2)) > 0 Then Return _True;
+Return _False;
+
+InStr:
+  If Pos(Arg(1),Arg(2)) > 0 Then Return _True;
+Return _False;
+
+Kword:
+  If Pos('=',Arg(1)) > 0 Then Return _True;
+Return _False;
+

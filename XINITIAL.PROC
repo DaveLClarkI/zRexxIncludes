@@ -1,0 +1,9 @@
+/* ----------------------------------------------------------------- */
+/* Parse Source values                                               */
+/* ----------------------------------------------------------------- */
+
+  Parse Source _sys _env _pgm _tokens;
+
+  _True  = (0=0);            /* define boolean True value  */
+  _False = (0=1);            /* define boolean False value */
+
