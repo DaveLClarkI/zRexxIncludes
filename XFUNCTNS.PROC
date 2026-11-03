@@ -1,68 +1,140 @@
-/* ----------------------------------------------------------------- */         
-/* Return a numeric value formatted with commas.                     */         
-/* ----------------------------------------------------------------- */         
-Commas: Procedure                                                               
-  Arg str;                                                                      
-  If Pos(".",str) < 1 Then decm = "";                                           
-  Else decm = SubStr(str,Pos(".",str));                                         
-  str  = Left(str,Length(str)-Length(decm));                                    
-  Do i = Length(str)-3 To 1 By -3                                               
-    str = Left(str,i)","SubStr(str,i+1);                                        
-  End                                                                           
-Return str||decm;                                                               
-                                                                                
-/* ----------------------------------------------------------------- */         
-/* Return a readable and scaled file size specification.             */         
-/* ----------------------------------------------------------------- */         
-FileSize: Procedure;                                                            
-  Arg nbr,cisize,type;                                                          
-  If type == 'XLDS' Then Do                                                     
-    nbr = nbr * cisize;                                                         
-    Return FormatScaled(nbr,5,2,1,1000,"BKMGTP");                               
-  End                                                                           
-Return FormatScaled(nbr,5,2,1,1024,"BKMGTP");                                   
-                                                                                
-/* ----------------------------------------------------------------- */         
-/* Return a readable and scaled numeric value with commas.           */         
-/* ----------------------------------------------------------------- */         
-FormatScaled: Procedure;                                                        
-  Arg nbr,wdt,whl,dcm,factor,radix;                                             
-  Do scale = 1 To Length(radix)                                                 
-    If nbr < (10**whl) Then Leave;                                              
-    nbr = nbr / factor;                                                         
-  End                                                                           
-Return Right(Commas(Format(nbr,,dcm))||SubStr(radix,scale,1),wdt);              
-                                                                                
-/* ----------------------------------------------------------------- */         
-/* IF Function whose first argument is a Boolean value that          */         
-/*             determines which of the other two arguments to return */         
-/* ----------------------------------------------------------------- */         
-IFF: Procedure;                                                                 
-  Parse Arg cond,trueValue,falseValue;                                          
-  If cond Then Return trueValue;                                                
-Return falseValue;                                                              
-/* ----------------------------------------------------------------- */         
-                                                                                
-InList:                                                                         
-  If WordPos(Arg(1),Arg(2)) > 0 Then Return _True;                              
-Return _False;                                                                  
-                                                                                
-InStr:                                                                          
-  If Pos(Arg(1),Arg(2)) > 0 Then Return _True;                                  
-Return _False;                                                                  
-                                                                                
-Kword:                                                                          
-  If Pos('=',Arg(1)) > 0 Then Return _True;                                     
-Return _False;                                                                  
-                                                                                
-/* ----------------------------------------------------------------- */         
-/* Send "SAY" output to both console and printer.                    */         
-/* ----------------------------------------------------------------- */         
-SayAll: Procedure;                                                              
-  Parse Arg msg;                                                                
-  oldout = ASSGN('STDOUT','SYSLOG');                                            
-  Say msg;                                                                      
-  oldout = ASSGN('STDOUT','SYSLST');                                            
-  Say msg;                                                                      
-Return;                                                                         
-                                                                                
+/* ----------------------------------------------------------------- */
+/* Return a numeric value formatted with commas.                     */
+/* ----------------------------------------------------------------- */
+Commas: Procedure
+  Arg str;
+  If Pos(".",str) < 1 Then decm = "";
+  Else decm = SubStr(str,Pos(".",str));
+  str  = Left(str,Length(str)-Length(decm));
+  Do i = Length(str)-3 To 1 By -3
+    str = Left(str,i)","SubStr(str,i+1);
+  End
+Return str||decm;
+
+/* ----------------------------------------------------------------- */
+/* De-edit a string value into a (potentially) usable number.        */
+/* ----------------------------------------------------------------- */
+DEEDIT: Procedure;
+Return Space(Translate(Arg(1),'','>$/,%:BKMGTP'),0);
+
+/* ----------------------------------------------------------------- */
+/* Return a readable and scaled file size specification.             */
+/* ----------------------------------------------------------------- */
+FileSize: Procedure;
+  Arg nbr,cisize,type;
+  If type == 'XLDS' Then Do
+    nbr = nbr * cisize;
+    Return FormatScaled(nbr,5,2,1,1000,"BKMGTP");
+  End
+Return FormatScaled(nbr,5,2,1,1024,"BKMGTP");
+
+/* ----------------------------------------------------------------- */
+/* Return a readable and scaled numeric value with commas.           */
+/* ----------------------------------------------------------------- */
+FormatScaled: Procedure;
+  Arg nbr,wdt,whl,dcm,factor,radix;
+  Do scale = 1 To Length(radix)
+    If nbr < (10**whl) Then Leave;
+    nbr = nbr / factor;
+  End
+Return Right(Commas(Format(nbr,,dcm))||SubStr(radix,scale,1),wdt);
+
+/* ----------------------------------------------------------------- */
+/* IF Function whose first argument is a Boolean value that          */
+/*             determines which of the other two arguments to return */
+/* ----------------------------------------------------------------- */
+IFF: Procedure;
+  Parse Arg cond,trueValue,falseValue;
+  If cond Then Return trueValue;
+Return falseValue;
+/* ----------------------------------------------------------------- */
+
+/* ----------------------------------------------------------------- */
+/* INLIST Function whose first argument is a search value to find    */
+/*                 in the second argument (a blank-delimited list)   */
+/*                 and returning a Boolean result of the search.     */
+/* ----------------------------------------------------------------- */
+InList: Procedure Expose _True _False;
+  If Left(Arg(3),1) = 'I' Then Do
+    If WordPos(Translate(Arg(1)),Translate(Arg(2))) > 0 Then
+      Return _True;
+  End
+  Else Do
+    If WordPos(Arg(1),Arg(2)) > 0 Then Return _True;
+  End
+Return _False;
+
+/* ----------------------------------------------------------------- */
+/* INSTR Function whose first argument is a search value to find     */
+/*                in the second argument (a variable-length string)  */
+/*                and returning a Boolean result of the search.      */
+/* ----------------------------------------------------------------- */
+InStr: Procedure Expose _True _False;
+  If Left(Arg(3),1) = 'I' Then Do
+    If Pos(Translate(Arg(1)),Translate(Arg(2))) > 0 Then Return _True;
+  End
+  Else Do
+    If Pos(Arg(1),Arg(2)) > 0 Then Return _True;
+  End
+Return _False;
+
+/* ----------------------------------------------------------------- */
+/* KWORD Function whose argument is tested for an equal sign         */
+/*                (indicating it is a keyword value)                 */
+/*                and returning a Boolean result.                    */
+/* ----------------------------------------------------------------- */
+Kword: Procedure Expose _True _False;
+  If Pos('=',Arg(1)) > 0 Then Return _True;
+Return _False;
+
+/* ----------------------------------------------------------------- */
+/* Convert packed to zoned decimal with optional decimal point.      */
+/* Arguments:                                                        */
+/*   _pdec - Packed-decimal byte string (e.g., value x'123456789C')  */
+/*   _ddig - Number of implied decimal digits (e.g., 2 for V99)      */
+/* ----------------------------------------------------------------- */
+P2D: Procedure;
+  Parse Arg _pdec, _ddig;
+  _hexstr = C2X(_pdec);
+  _sign = Right(_hexstr,1);
+  _zdec = Left(_hexstr,Length(_hexstr)-1) + 0;
+  If Datatype(_ddig, 'W') & _ddig > 0 Then
+    _zdec = _zdec / (10 ** _ddig);
+  If Pos(_sign,'BD') > 0 Then
+    Return '-'||_zdec;
+Return _zdec;
+
+/* ----------------------------------------------------------------- */
+/* Convert zoned decimal to packed (i.e., a COMP-3 byte string).     */
+/* Arguments:                                                        */
+/*   _zdec - REXX numeric value (e.g., -123.45, 123.45, 50)          */
+/*   _tlen - Target byte length of the packed field (e.g., 5)        */
+/*   _ddig - Number of implied decimal places (e.g., 2 for V99)      */
+/* ----------------------------------------------------------------- */
+D2P: Procedure;
+  Parse Arg _zdec, _tlen, _ddig;
+  If \Datatype(_tlen, 'W') | _tlen <= 0 Then Do
+    Say "D2P Error: Target byte length not a positive, whole number."
+    _dummy = Substr("ERROR", 1, -1);   /* generate an error */
+  End
+  _tlen = (_tlen * 2) - 1;
+  If \Datatype(_ddig, 'W') Then _ddig = 0;
+  If _zdec < 0 Then _sign = 'D';
+               Else _sign = 'C';
+  _zdec = Abs(_zdec);
+  _zdec = Format(Trunc(_zdec, _ddig), , _ddig);
+  _pdec = Space(Translate(_zdec, '', '.'), 0);
+  _pdec = Right(_pdec, _tlen, '0');
+Return X2C(_pdec||_sign);
+
+/* ----------------------------------------------------------------- */
+/* Send "SAY" output to both console and printer.                    */
+/* ----------------------------------------------------------------- */
+SayAll: Procedure;
+  Parse Arg msg;
+  oldout = ASSGN('STDOUT','SYSLOG');
+  Say msg;
+  oldout = ASSGN('STDOUT','SYSLST');
+  Say msg;
+Return;
+
