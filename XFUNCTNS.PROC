@@ -94,15 +94,15 @@ Return _False;
 /*   _ddig - Number of implied decimal digits (e.g., 2 for V99)      */
 /* ----------------------------------------------------------------- */
 P2D: Procedure;
-  Parse Arg _pdec, _ddig;
-  _hexstr = C2X(_pdec);
-  _sign = Right(_hexstr,1);
+  Parse Arg _pdec, _ddig;             /* get parameters        */
+  _hexstr = C2X(_pdec);               /* convert to hex string */
+  _sign = Right(_hexstr,1);           /* extract sign nibble   */
   _zdec = Left(_hexstr,Length(_hexstr)-1) + 0;
   If Datatype(_ddig, 'W') & _ddig > 0 Then
-    _zdec = _zdec / (10 ** _ddig);
-  If Pos(_sign,'BD') > 0 Then
-    Return '-'||_zdec;
-Return _zdec;
+    _zdec = _zdec / (10 ** _ddig);    /* align decimal point   */
+  If Pos(_sign,'BD') > 0 Then         /* if negative sign      */
+    Return '-'||_zdec;                /* return with dash pfx  */
+Return _zdec;                         /* else return positive  */
 
 /* ----------------------------------------------------------------- */
 /* Convert zoned decimal to packed (i.e., a COMP-3 byte string).     */
@@ -112,20 +112,20 @@ Return _zdec;
 /*   _ddig - Number of implied decimal places (e.g., 2 for V99)      */
 /* ----------------------------------------------------------------- */
 D2P: Procedure;
-  Parse Arg _zdec, _tlen, _ddig;
+  Parse Arg _zdec, _tlen, _ddig;      /* get parameters        */
   If \Datatype(_tlen, 'W') | _tlen <= 0 Then Do
-    Say "D2P Error: Target byte length not a positive, whole number."
-    _dummy = Substr("ERROR", 1, -1);   /* generate an error */
+    Say "D2P Error: Target byte length not a positive, whole number.";
+    _error = Substr("ERROR", 1, -1);  /* generate an error     */
   End
-  _tlen = (_tlen * 2) - 1;
-  If \Datatype(_ddig, 'W') Then _ddig = 0;
-  If _zdec < 0 Then _sign = 'D';
-               Else _sign = 'C';
-  _zdec = Abs(_zdec);
-  _zdec = Format(Trunc(_zdec, _ddig), , _ddig);
-  _pdec = Space(Translate(_zdec, '', '.'), 0);
-  _pdec = Right(_pdec, _tlen, '0');
-Return X2C(_pdec||_sign);
+  If _zdec < 0 Then _sign = 'D';      /* set negative sign     */
+               Else _sign = 'C';      /* set positive sign     */
+  _tlen = (_tlen * 2) - 1;            /* calc precision digits */
+  If \Datatype(_ddig, 'W') Then _ddig = 0; /* default decimals */
+  _zdec = Abs(_zdec);                 /* set absolute value    */
+  _zdec = Format(Trunc(_zdec, _ddig), , _ddig);/* set decimals */
+  _pdec = Space(Translate(_zdec, '', '.'), 0); /* set implied  */
+  _pdec = Right(_pdec, _tlen, '0');   /* set full precision    */
+Return X2C(_pdec||_sign);             /* return byte string    */
 
 /* ----------------------------------------------------------------- */
 /* Send "SAY" output to both console and printer.                    */
